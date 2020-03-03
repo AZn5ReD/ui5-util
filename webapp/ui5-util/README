@@ -1,0 +1,24 @@
+HOW TO USE
+
+1. Paste the folder ui5-util in your webapp folder
+2. You can call the relevant file in the controller :
+/*
+*		sap.ui.define([
+*			"sap/ui/core/mvc/Controller",
+*			"../ui5-util/Utilities"
+*		], function (Controller, Util) {
+*			"use strict";
+*			return Controller.extend("ui5.util.ui5-util.controller.View", {
+*				Util: util,	// For usage in XML Views
+*				onInit: function () {
+*					Util.method(arg);
+*				}
+*			});
+*		});
+*/
+
+2bis. Or use it in a XML view (if it's already declared in the associated controller) :
+
+/*
+*	<Input change=".util.method(arg)"/>
+*/

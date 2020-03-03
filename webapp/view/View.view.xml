@@ -3,7 +3,9 @@
 		<App id="app">
 			<pages>
 				<Page id="page" title="{i18n>title}">
-					<content></content>
+					<content>
+						<Button text="Test ValueHelpDialog" press="onValueHelpDialog" />
+					</content>
 				</Page>
 			</pages>
 		</App>
