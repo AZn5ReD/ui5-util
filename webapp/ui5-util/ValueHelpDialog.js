@@ -1,35 +1,67 @@
 sap.ui.define([
-	"sap/ui/core/message/Message",
-	"sap/ui/core/MessageType",
-	"sap/ui/core/ValueState"
-], function (Message, MessageType, ValueState) {
+	"sap/ui/comp/valuehelpdialog/ValueHelpDialog",
+	"sap/ui/comp/filterbar/FilterBar",
+	"sap/ui/comp/filterbar/FilterGroupItem",
+	"sap/ui/model/json/JSONModel",
+	"sap/ui/model/Filter"
+], function (ValueHelpDialog, FilterBar, FilterGroupItem, JSONModel, Filter) {
 	"use strict";
 
 	return {
-		handleValueHelp: function (oEvent) {
-			var that = this;
-			var oContext = oEvent.getSource().getParent().getParent().getBindingContext("detailData");
+		handleValueHelpDialog: function (oContext, oEvent) {
+			//TODO Add Object Param model
+			//TODO Add Function model
+			var that = oContext;
+			//var oContext = oEvent.getSource().getParent().getParent().getBindingContext("detailData");
+
+			var fnOk = function (oOkEvent) {
+				var oToken = oEvent.getParameter("tokens")[0];
+				that.getModel("detailData").setProperty("WBSElementExt", oToken.data("row").WBSExt, oContext);
+				that.getModel("detailData").setProperty("WBSElementDescr", oToken.data("row").WBSDescr, oContext);
+				this.close();
+			};
+
+			var fnCancel = function () {
+				this.close();
+			};
+
+			var fnAfterClose = function () {
+				this.destroy();
+				delete this;
+			};
+
+			var fnSearch = function (oEvent) {
+				var aSelectionSet = oEvent.getParameter("selectionSet");
+				var aFilters = aSelectionSet.reduce(function (aResult, oControl) {
+					if (oControl.getValue()) {
+						aResult.push(new Filter({
+							path: oControl.getName(),
+							operator: "Contains",
+							value1: oControl.getValue()
+						}));
+					}
+					return aResult;
+				}, []);
+
+				var oValueHelpDialog = oEvent.getSource().getParent().getParent().getParent();
+				var oTable = oValueHelpDialog.getTable();
+				if (oTable.bindRows) {
+					oTable.getBinding("rows").filter(aFilters);
+				}
+				oValueHelpDialog.update();
+			};
+
 			var oValueHelpDialog = new ValueHelpDialog({
 				title: this.getResourceBundle().getText("itemDetailAccountAssignmentProjectLabel"),
-				ok: function (oEvent) {
-					var oToken = oEvent.getParameter("tokens")[0];
-					that.getModel("detailData").setProperty("WBSElementExt", oToken.data("row").WBSExt, oContext);
-					that.getModel("detailData").setProperty("WBSElementDescr", oToken.data("row").WBSDescr, oContext);
-					this.close();
-				},
-				cancel: function () {
-					this.close();
-				},
-				afterClose: function () {
-					this.destroy();
-					delete this;
-				},
+				ok: fnOK,
+				cancel: fnCancel,
+				afterClose: fnAfterClose,
 				supportMultiselect: false,
 				key: "WBSExt",
 				descriptionKey: "WBSDescr",
 				filterBar: new FilterBar({
 					filterGroupItems: [
-						new GroupItem({
+						new FilterGroupItem({
 							name: "WBSExt",
 							groupName: "__$INTERNAL$",
 							label: this.getResourceBundle().getText("itemDetailAccountAssignmentProjectLabel"),
@@ -38,7 +70,7 @@ sap.ui.define([
 								name: "WBSExt"
 							})
 						}),
-						new GroupItem({
+						new FilterGroupItem({
 							name: "WBSDescr",
 							groupName: "__$INTERNAL$",
 							label: this.getResourceBundle().getText("detailTableColumnDescription"),
@@ -48,28 +80,10 @@ sap.ui.define([
 							})
 						})
 					],
-					search: function (oEvent) {
-						var aSelectionSet = oEvent.getParameter("selectionSet");
-						var aFilters = aSelectionSet.reduce(function (aResult, oControl) {
-							if (oControl.getValue()) {
-								aResult.push(new Filter({
-									path: oControl.getName(),
-									operator: "Contains",
-									value1: oControl.getValue()
-								}));
-							}
-							return aResult;
-						}, []);
-
-						var oValueHelpDialog = oEvent.getSource().getParent().getParent().getParent();
-						var oTable = oValueHelpDialog.getTable();
-						if (oTable.bindRows) {
-							oTable.getBinding("rows").filter(aFilters);
-						}
-						oValueHelpDialog.update();
-					}
+					search: fnSearch
 				})
 			});
+
 			var oTable = oValueHelpDialog.getTable();
 			oTable.setModel(new JSONModel({
 				"cols": [{
@@ -85,14 +99,15 @@ sap.ui.define([
 				//        oTable.setModel(this.getModel("ProjectSet"), "ProjectSet");
 				oTable.setModel(that.getModel());
 				oTable.bindRows({
-					path: "/WBSSet",
-					filters: [new Filter({
-						path: "CompanyCode",
-						operator: "EQ",
-						value1: sCompanyCode
-					})]
+					path: "/Products",
+					// filters: [new Filter({
+					// 	path: "CompanyCode",
+					// 	operator: "EQ",
+					// 	value1: sCompanyCode
+					// })]
 				});
 			}
+			
 			oValueHelpDialog.open();
 		}
 	};

@@ -8,6 +8,7 @@ sap.ui.define([
 	return Controller.extend("ui5.util.ui5-util.controller.View", {
 		onInit: function () {
 			var validator = new Validator();
+			
 			this.getView().getModel().read("/Products", {
 				success: function (oData) {
 					console.log("Connected to Northwind");
@@ -21,7 +22,7 @@ sap.ui.define([
 		},
 		
 		onValueHelpDialog: function (oEvent) {
-			ValueHelpDialog.handleValueHelp(oEvent);
+			ValueHelpDialog.handleValueHelpDialog(this, oEvent);
 		}
 	});
 });
