@@ -26,16 +26,27 @@ sap.ui.define([
 
 		onValueHelpDialog: function (oEvent) {
 			ValueHelpDialog.handleValueHelpDialog(this, oEvent, {
-				title: "Products",
+				title: "Title Products",
 				key: "ID",
 				description: "Name",
 				cols: [{
-					label: "ID",
-					template: "ID"
+					label: "Label ID",
+					template: "Products>ID" // "ID"
 				}, {
-					label: "Name",
-					template: "Name"
-				}, ],
+					label: "Label Name",
+					template: "Products>Name" // "Name"
+				}],
+				rows: {
+					path: "Products>/results" // "/Products"
+				}
+			}, {
+				ok: function (oOkEvent) {
+					var oToken = oOkEvent.getParameter("tokens")[0],
+						oValueHelpSource = oOkEvent.getSource().data("valueHelpSource");
+					oValueHelpSource.setValue(oToken.data("row")["ID"]);
+					oValueHelpSource.setDescription(oToken.data("row")["Name"]);
+					oOkEvent.getSource().close();
+				}
 			});
 		}
 	});

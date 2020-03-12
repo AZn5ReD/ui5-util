@@ -1,3 +1,41 @@
+/*
+Usage :
+
+// XML
+<Input value="{InputModel>/value}" description="{InputModel>/description}" showValueHelp="true" valueHelpRequest="onValueHelpDialog"/>
+
+// JS
+onValueHelpDialog: function (oEvent) {
+	ValueHelpDialog.handleValueHelpDialog(this, oEvent, {
+		title: "Title Products",
+		key: "ID",
+		description: "Name",
+		cols: [{
+			label: "Label ID",
+			template: "Products>ID" // "ID" for ODataModel
+		}, {
+			label: "Label Name",
+			template: "Products>Name" // "Name" for ODataModel
+		}],
+		rows: {
+			path: "Products>/results" // "/Products" for ODataModel
+		}
+	}, {
+		ok: function (oOkEvent) {
+			var oToken = oOkEvent.getParameter("tokens")[0],
+				oValueHelpSource = oOkEvent.getSource().data("valueHelpSource");
+			oValueHelpSource.setValue(oToken.data("row")["ID"]);
+			oValueHelpSource.setDescription(oToken.data("row")["Name"]);
+			this.close();
+		}
+		cancel: function (oEvent) { ... },
+		afterClose: function (oEvent) { ... },
+		search: function (oEvent) { ... }
+	});
+}
+
+*/
+
 sap.ui.define([
 	"sap/ui/comp/valuehelpdialog/ValueHelpDialog",
 	"sap/ui/comp/filterbar/FilterBar",
@@ -10,15 +48,18 @@ sap.ui.define([
 
 	return {
 		handleValueHelpDialog: function (oThis, oEvent, oParams, oFunctions) {
-			// Get context if needed (in a table for example)
-			var oContext = oEvent.getSource().getParent().getParent().getBindingContext(oParams.model) || null;
+			// Define default functions (can be redifined by oFunctions)
+			var fnOk = function (oOkEvent) {
+				// var oToken = oOkEvent.getParameter("tokens")[0],
+				// 	oValueHelpSource = oOkEvent.getSource().data("valueHelpSource");
+				// oValueHelpSource.setValue(oToken.data("row")[oParams.key]);
+				// oValueHelpSource.setDescription(oToken.data("row")[oParams.description]);
 
-			// Define default functions
-			var fnOk = function (oEvent) {
-				var oToken = oEvent.getParameter("tokens")[0],
-					oValueHelpSource = oEvent.getSource().data("valueHelpSource");
-				oThis.getView().getModel(oParams.model).setProperty(oParams.key, oToken.data("row")[oParams.key], oContext);
-				oThis.getView().getModel(oParams.model).setProperty(oParams.description, oToken.data("row")[oParams.description], oContext);
+				// Working with context if needed (in a table for example)
+				// var oContext = oValueHelpSource.getBindingContext("model");
+				// oThis.getView().getModel("model").setProperty(oParams.key, oToken.data("row")[oParams.key], oContext);
+				// oThis.getView().getModel("model").setProperty(oParams.description, oToken.data("row")[oParams.description], oContext);
+
 				this.close();
 			};
 
@@ -91,7 +132,7 @@ sap.ui.define([
 				}),
 				customData: [{
 					key: "valueHelpSource",
-					value: oEvent.getSource()			// Keep reference of source
+					value: oEvent.getSource() // Keep reference of source
 				}],
 				ok: fnOk,
 				cancel: fnCancel,
@@ -103,15 +144,16 @@ sap.ui.define([
 			oTable.setModel(new JSONModel({
 				cols: oParams.cols
 			}), "columns");
-			
+
 			if (oTable.bindRows) {
-				// TODO Handle oDataModel and JSONModel
-				// TODO Handle custom binding ? (filters, etc.)
-				//        oTable.setModel(this.getModel("ProjectSet"), "ProjectSet");
-				oTable.setModel(oThis.getView().getModel());
-				oTable.bindRows({
-					path: "/Products",
-				});
+				var index = oParams.rows.path.indexOf(">");
+				if (index !== -1) { // Local model
+					var sModel = oParams.rows.path.substring(0, index);
+					oTable.setModel(oThis.getView().getModel(sModel), sModel);
+				} else { // ODataModel
+					oTable.setModel(oThis.getView().getModel());
+				}
+				oTable.bindRows(oParams.rows);
 			}
 
 			oValueHelpDialog.open();

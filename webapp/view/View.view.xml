@@ -4,7 +4,6 @@
 			<pages>
 				<Page id="page" title="{i18n>title}">
 					<content>
-						<Button text="Test ValueHelpDialog" press="onValueHelpDialog"/>
 						<Input value="{InputModel>/value}" description="{InputModel>/description}" showValueHelp="true" valueHelpOnly="true"
 							valueHelpRequest="onValueHelpDialog"/>
 					</content>
