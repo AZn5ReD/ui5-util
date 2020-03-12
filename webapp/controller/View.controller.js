@@ -35,10 +35,14 @@ sap.ui.define([
 				}, {
 					label: "Label Name",
 					template: "Products>Name" // "Name"
+				}, {
+					label: "Label Description",
+					template: "Products>Description" // "Description"
 				}],
 				rows: {
 					path: "Products>/results" // "/Products"
-				}
+				},
+				searchAllDescriptions: false
 			});
 		}
 	});

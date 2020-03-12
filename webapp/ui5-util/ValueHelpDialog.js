@@ -2,38 +2,31 @@
 Usage :
 
 // XML
-<Input value="{InputModel>/value}" description="{InputModel>/description}" showValueHelp="true" valueHelpRequest="onValueHelpDialog"/>
+	<Input value="{InputModel>/value}" description="{InputModel>/description}" showValueHelp="true" valueHelpRequest="onValueHelpDialog"/>
 
 // JS
-onValueHelpDialog: function (oEvent) {
-	ValueHelpDialog.handleValueHelpDialog(this, oEvent, {
-		title: "Title Products",
-		key: "ID",
-		description: "Name",
-		cols: [{
-			label: "Label ID",
-			template: "Products>ID" // "ID" for ODataModel
-		}, {
-			label: "Label Name",
-			template: "Products>Name" // "Name" for ODataModel
-		}],
-		rows: {
-			path: "Products>/results" // "/Products" for ODataModel
-		}
-	}, {
-		ok: function (oOkEvent) {
-			var oToken = oOkEvent.getParameter("tokens")[0],
-				oValueHelpSource = oOkEvent.getSource().data("valueHelpSource");
-			oValueHelpSource.setValue(oToken.data("row")["ID"]);
-			oValueHelpSource.setDescription(oToken.data("row")["Name"]);
-			this.close();
-		}
-		cancel: function (oEvent) { ... },
-		afterClose: function (oEvent) { ... },
-		search: function (oEvent) { ... }
-	});
-}
-
+	onValueHelpDialog: function (oEvent) {
+		ValueHelpDialog.handleValueHelpDialog(this, oEvent, {
+			title: "Title Products",
+			key: "ID",
+			description: "Name",
+			cols: [{
+				label: "Label ID",
+				template: "Products>ID" // "ID"
+			}, {
+				label: "Label Name",
+				template: "Products>Name" // "Name"
+			}, {
+				label: "Label Description",
+				template: "Products>Description" // "Description"
+			}],
+			rows: {
+				path: "Products>/results" // "/Products"
+			},
+			searchAllDescriptions: true // Only on description to search all the other columns
+		});
+	}
+		
 */
 
 sap.ui.define([
@@ -48,6 +41,8 @@ sap.ui.define([
 
 	return {
 		handleValueHelpDialog: function (oThis, oEvent, oParams, oFunctions) {
+			var index, name;
+
 			// Define default functions (can be redifined by oFunctions)
 			var fnOk = function (oOkEvent) {
 				var oToken = oOkEvent.getParameter("tokens")[0],
@@ -85,20 +80,60 @@ sap.ui.define([
 					return aResult;
 				}, []);
 
+				// Search on all descriptions
+				var oDescriptionFilter = aFilters.find(function (el) {
+					return el.sPath === oParams.description
+				});
+				if (oParams.searchAllDescriptions && oDescriptionFilter) {
+					for (var i in oParams.cols) {
+						if (i < 2) {
+							continue;
+						}
+						index = oParams.cols[i].template.indexOf(">");
+						var path = (index !== -1) ? oParams.cols[i].template.substring(index + 1, oParams.cols[i].template.length) : oParams.cols[i].template;
+						aFilters.push(new Filter({
+							path: path,
+							operator: "Contains",
+							value1: oDescriptionFilter.oValue1
+						}));
+					}
+				}
+
 				var oValueHelpDialog = oEvent.getSource().getParent().getParent().getParent();
 				var oTable = oValueHelpDialog.getTable();
-				if (oTable.bindRows) {
-					oTable.getBinding("rows").filter(aFilters);
-				}
+				oTable.getBinding("rows").filter(aFilters.length ? new Filter({
+					filters: aFilters
+				}) : new Filter());
 				oValueHelpDialog.update();
 			};
-
+			
 			// Replace with custom functions
 			if (oFunctions) {
 				fnOk = oFunctions.ok || fnOK;
 				fnCancel = oFunctions.cancel || fnCancel;
 				fnAfterClose = oFunctions.afterClose || fnAfterClose;
 				fnSearch = oFunctions.search || fnSearch;
+			}
+
+			// Filter group items
+			var aFilterGroupItems = [];
+			for (var i in oParams.cols) {
+				if (oParams.searchAllDescriptions && i === "2") { // Show only key and description input search
+					break;
+				}
+				index = oParams.cols[i].template.indexOf(">");
+				name = (index !== -1) ? oParams.cols[i].template.substring(index + 1, oParams.cols[i].template.length) : oParams.cols[i].template;
+				aFilterGroupItems.push(
+					new FilterGroupItem({
+						name: name,
+						groupName: "__$INTERNAL$",
+						label: oParams.cols[i].label,
+						visibleInFilterBar: true,
+						control: new Input({
+							name: name
+						})
+					})
+				);
 			}
 
 			// Define value help dialog
@@ -108,26 +143,7 @@ sap.ui.define([
 				key: oParams.key,
 				descriptionKey: oParams.description,
 				filterBar: new FilterBar({
-					filterGroupItems: [
-						new FilterGroupItem({
-							name: oParams.key,
-							groupName: "__$INTERNAL$",
-							label: oParams.cols[0].label, // 1st column label
-							visibleInFilterBar: true,
-							control: new Input({
-								name: oParams.key
-							})
-						}),
-						new FilterGroupItem({
-							name: oParams.description,
-							groupName: "__$INTERNAL$",
-							label: oParams.cols[1].label, // 2nd column label
-							visibleInFilterBar: true,
-							control: new Input({
-								name: oParams.key
-							})
-						})
-					],
+					filterGroupItems: aFilterGroupItems,
 					search: fnSearch
 				}),
 				customData: [{
@@ -141,20 +157,21 @@ sap.ui.define([
 
 			// Set value help dialog models
 			var oTable = oValueHelpDialog.getTable();
+
+			// Columns
 			oTable.setModel(new JSONModel({
 				cols: oParams.cols
 			}), "columns");
 
-			if (oTable.bindRows) {
-				var index = oParams.rows.path.indexOf(">");
-				if (index !== -1) { // Local model
-					var sModel = oParams.rows.path.substring(0, index);
-					oTable.setModel(oThis.getView().getModel(sModel), sModel);
-				} else { // ODataModel
-					oTable.setModel(oThis.getView().getModel());
-				}
-				oTable.bindRows(oParams.rows);
+			// Rows
+			index = oParams.rows.path.indexOf(">");
+			if (index !== -1) { // Local model
+				var sModel = oParams.rows.path.substring(0, index);
+				oTable.setModel(oThis.getView().getModel(sModel), sModel);
+			} else { // ODataModel
+				oTable.setModel(oThis.getView().getModel());
 			}
+			oTable.bindRows(oParams.rows);
 
 			oValueHelpDialog.open();
 		}
