@@ -50,10 +50,10 @@ sap.ui.define([
 		handleValueHelpDialog: function (oThis, oEvent, oParams, oFunctions) {
 			// Define default functions (can be redifined by oFunctions)
 			var fnOk = function (oOkEvent) {
-				// var oToken = oOkEvent.getParameter("tokens")[0],
-				// 	oValueHelpSource = oOkEvent.getSource().data("valueHelpSource");
-				// oValueHelpSource.setValue(oToken.data("row")[oParams.key]);
-				// oValueHelpSource.setDescription(oToken.data("row")[oParams.description]);
+				var oToken = oOkEvent.getParameter("tokens")[0],
+					oValueHelpSource = oOkEvent.getSource().data("valueHelpSource");
+				oValueHelpSource.setValue(oToken.data("row")[oParams.key]);
+				oValueHelpSource.setDescription(oToken.data("row")[oParams.description]);
 
 				// Working with context if needed (in a table for example)
 				// var oContext = oValueHelpSource.getBindingContext("model");

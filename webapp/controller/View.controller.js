@@ -39,14 +39,6 @@ sap.ui.define([
 				rows: {
 					path: "Products>/results" // "/Products"
 				}
-			}, {
-				ok: function (oOkEvent) {
-					var oToken = oOkEvent.getParameter("tokens")[0],
-						oValueHelpSource = oOkEvent.getSource().data("valueHelpSource");
-					oValueHelpSource.setValue(oToken.data("row")["ID"]);
-					oValueHelpSource.setDescription(oToken.data("row")["Name"]);
-					oOkEvent.getSource().close();
-				}
 			});
 		}
 	});
